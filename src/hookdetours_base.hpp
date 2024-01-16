@@ -6,19 +6,8 @@
         common(ud); \
         storedDetour = ud; \
 
-#define CHECK_HOOK(expected, address, convention, func) \
-    if (std::string_view(expected) == (name)) \
-        return mod->addHook((void*)(geode::base::get() + address), fnvars::func(userDetour), std::string(name), convention).unwrap(); \
-
 
 namespace hookdetours {
-    template <typename T>
-    struct StoredDetour {
-        void* address;
-        int origPlacement;
-
-    };
-
     namespace fnvars {
         inline void common(PyObject* userDetour) {
             if (!PyCallable_Check(userDetour)) {
@@ -35,15 +24,22 @@ namespace hookdetours {
         if (!retval) {
             PyRuntime::get().throwPyError();
         }
+    }
 
-        if (!Py_IsNone(retval)) {
-            Py_DECREF(retval);
+    inline void cleanupObject(PyObject* obj) {
+        if (!Py_IsNone(obj)) {
+            Py_XDECREF(obj);
         }
     }
 
+#define CHECK_HOOK(expected, address, convention, func) \
+    {expected, [](geode::Mod* mod, const std::string_view name, PyObject* userDetour) { \
+        return mod->addHook((void*)(geode::base::get() + address), fnvars::func(userDetour), std::string(name), convention).unwrap(); \
+    }} \
+
 // non-static non-void
 #define CALL_ORIG_HOOK_NSNV(_name, cls, rettype, func, ...) \
-    if (name == _name) { \
+    {_name, [&rt](PyObject* args) -> PyObject* { \
         auto* self = rt.objectToPtr<cls>(PyTuple_GetItem(args, 1)).value_or(nullptr); \
         if (!self) { \
             PyErr_Format(PyExc_ValueError, "Malformed " #cls " instance"); \
@@ -54,11 +50,11 @@ namespace hookdetours {
         Fptr fp = &cls::func; \
         rettype ret = std::apply(std::mem_fn(fp), std::tuple_cat(std::tie(self), methargs)); \
         return rt.makePyObject(std::move(ret)); \
-    } \
+    }} \
 
 // non-static void
 #define CALL_ORIG_HOOK_NSV(_name, cls, func, ...) \
-    if (name == _name) { \
+    {_name, [&rt](PyObject* args) -> PyObject* { \
         auto* self = rt.objectToPtr<cls>(PyTuple_GetItem(args, 1)).value_or(nullptr); \
         if (!self) { \
             PyErr_Format(PyExc_ValueError, "Malformed " #cls " instance"); \
@@ -69,27 +65,27 @@ namespace hookdetours {
         Fptr fp = &cls::func; \
         std::apply(std::mem_fn(fp), std::tuple_cat(std::tie(self), methargs)); \
         Py_RETURN_NONE; \
-    } \
+    }} \
 
 // static non-void
 #define CALL_ORIG_HOOK_SNV(_name, cls, rettype, func, ...) \
-    if (name == _name) { \
+    {_name, [&rt](PyObject* args) -> PyObject* { \
         auto methargs = rt.unpackTuple<__VA_ARGS__>(args, 1); \
         using Fptr = rettype (*)(__VA_ARGS__); \
         Fptr fp = &cls::func; \
         rettype ret = std::apply(fp, methargs); \
         return rt.makePyObject(std::move(ret)); \
-    } \
+    }} \
 
 // static void
 #define CALL_ORIG_HOOK_SV(_name, cls, func, ...) \
-    if (name == _name) { \
+    {_name, [&rt](PyObject* args) -> PyObject* { \
         auto methargs = rt.unpackTuple<__VA_ARGS__>(args, 1); \
         using Fptr = void (*)(__VA_ARGS__); \
         Fptr fp = &cls::func; \
         std::apply(fp, methargs); \
         Py_RETURN_NONE; \
-    } \
+    }} \
 
     PyObject* callOriginal(PyObject* args);
     geode::Hook* addHook(geode::Mod* mod, const std::string_view name, PyObject* userDetour);

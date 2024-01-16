@@ -95,3 +95,7 @@ def modify_func(func):
 def call_original(func, *args):
     name = func._modify_func_name
     return _internal.call_original(name, *args)
+
+# call any gd function by name
+def call_function(name: str, *args):
+    return _internal.call_original(name, *args)

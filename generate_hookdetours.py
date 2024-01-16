@@ -23,10 +23,17 @@ END_FNVARS = """
 ADD_HOOK_SIG = "geode::Hook* addHook(geode::Mod* mod, const std::string_view name, PyObject* userDetour)"
 CALL_ORIGINAL_SIG = "PyObject* callOriginal(PyObject* args)"
 
+ADD_HOOK_BEGIN = f"""
+    {ADD_HOOK_SIG} {{
+        static std::unordered_map<std::string_view, std::function<geode::Hook*(geode::Mod*, std::string_view, PyObject*)>> functions = {{
+"""
+
 CALL_ORIGINAL_BEGIN = f"""
     {CALL_ORIGINAL_SIG} {{
         auto& rt = PyRuntime::get();
         auto name = rt.unpackFromTuple<std::string>(args, 0);
+        auto sv = std::string_view(name);
+        static std::unordered_map<std::string_view, std::function<PyObject*(PyObject*)>> functions = {{
 """
 
 def mangle_name(name: str):
@@ -184,13 +191,13 @@ with open(dest, 'w') as f:
     f.write(HEADER)
     f.write(START_FNVARS)
 
-    add_hook_str = f"    {ADD_HOOK_SIG} {{\n"
+    add_hook_str = ADD_HOOK_BEGIN
     call_original_str = CALL_ORIGINAL_BEGIN
 
     for name, (offset, is_static, convention, return_type, arglist) in function_list.items():
         is_void = return_type in ("void", "TodoReturn")
 
-        add_hook_str += f"        CHECK_HOOK(\"{name}\", {offset}, tulip::hook::TulipConvention::{convention}, {mangle_name(name)});\n"
+        add_hook_str += f"        CHECK_HOOK(\"{name}\", {offset}, tulip::hook::TulipConvention::{convention}, {mangle_name(name)}),\n"
 
         # write the function itself
         expanded_params = ", ".join([f"{arg_type} p{i}" for i, arg_type in enumerate(arglist)])
@@ -214,13 +221,13 @@ with open(dest, 'w') as f:
         # call original append
         if is_void or can_pack_arg(return_type):
             if not is_static and not is_void:
-                call_original_str += f"        CALL_ORIG_HOOK_NSNV(\"{name}\", {class_name}, {return_type}, {func_name}, {expanded_arg_types_skip1});\n"
+                call_original_str += f"        CALL_ORIG_HOOK_NSNV(\"{name}\", {class_name}, {return_type}, {func_name}, {expanded_arg_types_skip1}),\n"
             elif not is_static and is_void:
-                call_original_str += f"        CALL_ORIG_HOOK_NSV(\"{name}\", {class_name}, {func_name}, {expanded_arg_types_skip1});\n"
+                call_original_str += f"        CALL_ORIG_HOOK_NSV(\"{name}\", {class_name}, {func_name}, {expanded_arg_types_skip1}),\n"
             elif is_static and not is_void:
-                call_original_str += f"        CALL_ORIG_HOOK_SNV(\"{name}\", {class_name}, {return_type}, {func_name}, {expanded_arg_types});\n"
+                call_original_str += f"        CALL_ORIG_HOOK_SNV(\"{name}\", {class_name}, {return_type}, {func_name}, {expanded_arg_types}),\n"
             elif is_static and is_void:
-                call_original_str += f"        CALL_ORIG_HOOK_SV(\"{name}\", {class_name}, {func_name}, {expanded_arg_types});\n"
+                call_original_str += f"        CALL_ORIG_HOOK_SV(\"{name}\", {class_name}, {func_name}, {expanded_arg_types}),\n"
 
         if is_void:
             f.write(f"""
@@ -241,12 +248,13 @@ auto {mangle_name(name)}(PyObject* userDetour) {{
     static PyObject* storedDetour = nullptr;
     COMMON_UD(userDetour);
     return +[]({expanded_params}) -> {return_type} {{
-        {return_type} retval;
         PyObject* args = PyRuntime::get().packTuple({expanded_arg_names});
         auto res = PyObject_CallObject(storedDetour, args);
         Py_DECREF(args);
         handleException(res);
-        return PyRuntime::get().fromPyObject<{return_type}>(res);
+        auto retval = PyRuntime::get().fromPyObject<{return_type}>(res);
+        cleanupObject(res);
+        return retval;
     }};
 }}
 """)
@@ -254,10 +262,12 @@ auto {mangle_name(name)}(PyObject* userDetour) {{
 
     f.write(END_FNVARS)
     # addHook
-    add_hook_str += "\n        hookFail(name);\n    }\n"
+    add_hook_str += "        };\n\n        if (!functions.contains(name)) hookFail(name);\n"
+    add_hook_str += "\n        return functions.at(name)(mod, name, userDetour);\n    }\n"
     f.write(add_hook_str)
 
     # callOriginal
-    call_original_str += "\n        return nullptr;\n    }\n"
+    call_original_str += "        };\n\n        if (!functions.contains(sv)) return nullptr;\n"
+    call_original_str += "\n        return functions.at(sv)(args);\n    }\n"
     f.write(call_original_str)
     f.write(FOOTER)

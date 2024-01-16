@@ -18,3 +18,6 @@ class _Ptr:
     @classmethod
     def from_address(cls, ptr: Addr):
         return cls(ptr)
+
+    def get_address(self) -> Addr:
+        return self._ptr
