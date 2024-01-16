@@ -1,0 +1,15 @@
+{
+	"geode": "2.0.0",
+	"version": "v1.0.0",
+	"id": "dankmeme.pygeode",
+	"name": "pygeode",
+	"developer": "dankmeme",
+	"description": "",
+	"resources": {
+		"files": [
+			"py/Lib.zip",
+			"pylib/*.py",
+			"pylib/*.pyi"
+		]
+	}
+}
