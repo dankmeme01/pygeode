@@ -71,8 +71,8 @@ namespace hookdetours {
         Py_RETURN_NONE; \
     } \
 
-// static non-void
-// static void
+// static non-void TODO
+// static void TODO
 
     PyObject* callOriginal(PyObject* args);
 
