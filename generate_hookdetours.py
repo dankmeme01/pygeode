@@ -267,7 +267,7 @@ auto {mangle_name(name)}(PyObject* userDetour) {{
     f.write(add_hook_str)
 
     # callOriginal
-    call_original_str += "        };\n\n        if (!functions.contains(sv)) return nullptr;\n"
+    call_original_str += "        };\n\n        if (!functions.contains(sv)) { callFuncFailure(sv); return nullptr; };\n"
     call_original_str += "\n        return functions.at(sv)(args);\n    }\n"
     f.write(call_original_str)
     f.write(FOOTER)

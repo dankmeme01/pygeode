@@ -29,7 +29,7 @@ void PyRuntime::appendPath(const std::string_view path) {
     FREE_C_STRING(string);
 }
 
-void PyRuntime::throwPyError() {
+inline void PyRuntime::throwPyError() {
     if (!PyErr_Occurred()) return;
 
     PyObject *pType, *pValue, *pTraceback;

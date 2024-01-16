@@ -20,6 +20,12 @@ namespace hookdetours {
         throw std::runtime_error(std::string("attempted to hook a function with no binding: ") + std::string(func));
     }
 
+    inline void callFuncFailure(const std::string_view func) {
+        MAKE_C_STRING(func, string);
+        PyErr_Format(PyExc_RuntimeError, "attempted to call a function with no binding: %s", string);
+        FREE_C_STRING(string);
+    }
+
     inline void handleException(PyObject* retval) {
         if (!retval) {
             PyRuntime::get().throwPyError();

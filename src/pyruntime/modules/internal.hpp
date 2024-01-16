@@ -11,7 +11,7 @@ namespace module::_internal {
     PYMETHOD_DECL(mbo_ptr);
 
     static PyMethodDef methods[] = {
-        {"call_original", call_original, METH_VARARGS, "call the original method of a @modify class"},
+        {"call_original", call_original, METH_VARARGS, "call a GD function"},
         {"mbo_string", mbo_string, METH_VARARGS, ""},
         {"mbo_int", mbo_int, METH_VARARGS, ""},
         {"mbo_bool", mbo_bool, METH_VARARGS, ""},
