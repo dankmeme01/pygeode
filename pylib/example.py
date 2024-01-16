@@ -1,35 +1,46 @@
+from geode import *
+from gd import *
 import geode
-import gd
 import sys
 
-mod = geode.Mod.get()
+mod = Mod.get()
 version = mod.get_version()
 
-geode.log.info(f"Mod version: {version}")
+log.info(f"Mod version: {version}")
 
 @geode.modify
 class MenuLayer:
-    @geode.modify_func()
-    def onNewgrounds(self, sender: geode.Addr):
-        geode.log.info("on newgrounds hook called!")
+    @geode.modify_func
+    def init(self):
+        log.info("init!")
 
-        geode.call_original(MenuLayer.onNewgrounds, self, sender)
-        notif = geode.Notification.create(
+        geode.call_original(MenuLayer.init, self)
+        notif = Notification.create(
             "what the hell",
-            geode.NotificationIcon.Warning,
+            NotificationIcon.Warning,
             5.0
         )
         notif.show()
 
-# @geode.modify
-# class PlayLayer:
-#     @geode.modify_func()
-#     def init(self: geode.Addr, level: geode.Addr, arg1: bool, arg2: bool):
-#         if not geode.call_original(PlayLayer.init, level, arg1, arg2):
-#             return False
+        return True
 
-#         print(level, arg1, arg2)
+@geode.modify
+class PlayLayer:
+    @geode.modify_func
+    def init(self: geode.Addr, level: geode.Addr, arg1: bool, arg2: bool):
+        # call the original PlayLayer::init with the same arguments
+        if not geode.call_original(PlayLayer.init, self, level, arg1, arg2):
+            return False
 
-#         return True
+        # 'level' is right now just a memory address, convert it into a `GJGameLevel*` to access fields
+        level_struct = GJGameLevel.from_address(level)
+
+        notif = Notification.create(
+            f"you opened the level {level_struct.name}",
+            NotificationIcon.Success,
+            3.0
+        )
+        notif.show()
+        return True
 
 # mod.add_hook("MenuLayer::onNewgrounds", on_newgrounds, geode.OriginalPlacement.Discard)

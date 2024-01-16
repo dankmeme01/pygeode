@@ -28,3 +28,47 @@
         object->func(); \
         Py_RETURN_NONE; \
     }
+
+template <typename... Args>
+inline constexpr size_t arg_va_count() {
+    return sizeof...(Args);
+}
+
+// non-static non-void
+#define MAKE_CALLER_NSNV(class, func, rettype, ...) \
+    PyObject* CONCAT_HELPER(class, func)(PyObject* self, PyObject* args) { \
+        constexpr size_t argcount = arg_va_count<__VA_ARGS__>() + 1; \
+        CHECK_ARGS(args, argcount); \
+        UNPACK_PTR(args, class, object); \
+        auto methargs = PyRuntime::get().unpackTuple<__VA_ARGS__>(args, 1); \
+        using Fptr = rettype (class::*)(__VA_ARGS__); \
+        Fptr fp = &class::func; \
+        rettype ret = std::apply(std::mem_fn(fp), std::tuple_cat(std::tie(object), methargs)); \
+        return PyRuntime::get().makePyObject(std::move(ret)); \
+    }
+
+// non-static non-void const-qualified
+#define MAKE_CALLER_NSNVCQ(class, func, rettype, ...) \
+    PyObject* CONCAT_HELPER(class, func)(PyObject* self, PyObject* args) { \
+        constexpr size_t argcount = arg_va_count<__VA_ARGS__>() + 1; \
+        CHECK_ARGS(args, argcount); \
+        UNPACK_PTR(args, class, object); \
+        auto methargs = PyRuntime::get().unpackTuple<__VA_ARGS__>(args, 1); \
+        using Fptr = rettype (class::*)(__VA_ARGS__) const; \
+        Fptr fp = &class::func; \
+        rettype ret = std::apply(std::mem_fn(fp), std::tuple_cat(std::tie(object), methargs)); \
+        return PyRuntime::get().makePyObject(std::move(ret)); \
+    }
+
+// non-static void
+#define MAKE_CALLER_NSV(class, func, ...) \
+    PyObject* CONCAT_HELPER(class, func)(PyObject* self, PyObject* args) { \
+        constexpr size_t argcount = arg_va_count<__VA_ARGS__>() + 1; \
+        CHECK_ARGS(args, argcount); \
+        UNPACK_PTR(args, class, object); \
+        auto methargs = PyRuntime::get().unpackTuple<__VA_ARGS__>(args, 1); \
+        using Fptr = void (class::*)(__VA_ARGS__); \
+        Fptr fp = &class::func; \
+        std::apply(std::mem_fn(fp), std::tuple_cat(std::tie(object), methargs)); \
+        Py_RETURN_NONE; \
+    }

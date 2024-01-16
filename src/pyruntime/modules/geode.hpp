@@ -1,11 +1,9 @@
 #pragma once
 #include "shared.hpp"
 
-/* Internal geode module (named '_geode') */
+/* Geode bindings module (named '_geode') */
 
 namespace module::_geode {
-    PYMETHOD_DECL(call_original);
-
     PYMETHOD_DECL(get_base);
     PYMETHOD_DECL(get_cocos_base);
 
@@ -25,7 +23,6 @@ namespace module::_geode {
     PYMETHOD_DECL(Notification_show);
 
     static PyMethodDef methods[] = {
-        {"call_original", call_original, METH_VARARGS, "call the original method of a @modify class"},
         {"get_base", get_base, METH_NOARGS, "get the base address of the gd executable"},
         {"get_cocos_base", get_cocos_base, METH_NOARGS, "get the base address of cocos dll"},
 
@@ -49,7 +46,7 @@ namespace module::_geode {
     static PyModuleDef def = {
         PyModuleDef_HEAD_INIT,
         "_geode",
-        "Geode internal module",
+        "Geode bindings module",
         -1,
         methods
     };

@@ -71,9 +71,26 @@ namespace hookdetours {
         Py_RETURN_NONE; \
     } \
 
-// static non-void TODO
-// static void TODO
+// static non-void
+#define CALL_ORIG_HOOK_SNV(_name, cls, rettype, func, ...) \
+    if (name == _name) { \
+        auto methargs = rt.unpackTuple<__VA_ARGS__>(args, 1); \
+        using Fptr = rettype (*)(__VA_ARGS__); \
+        Fptr fp = &cls::func; \
+        rettype ret = std::apply(fp, methargs); \
+        return rt.makePyObject(std::move(ret)); \
+    } \
+
+// static void
+#define CALL_ORIG_HOOK_SV(_name, cls, func, ...) \
+    if (name == _name) { \
+        auto methargs = rt.unpackTuple<__VA_ARGS__>(args, 1); \
+        using Fptr = void (*)(__VA_ARGS__); \
+        Fptr fp = &cls::func; \
+        std::apply(fp, methargs); \
+        Py_RETURN_NONE; \
+    } \
 
     PyObject* callOriginal(PyObject* args);
-
+    geode::Hook* addHook(geode::Mod* mod, const std::string_view name, PyObject* userDetour);
 };

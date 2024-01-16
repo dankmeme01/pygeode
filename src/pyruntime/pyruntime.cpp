@@ -134,15 +134,11 @@ template PyObject* PyRuntime::makeInt<double>(double);
 template PyObject* PyRuntime::makeInt<Py_complex>(Py_complex);
 
 PyObject* PyRuntime::makeBool(bool val) {
-    return Py_BuildValue("p", (int)val);
+    return Py_BuildValue("O", val ? Py_True : Py_False);
 }
 
 PyObject* PyRuntime::makeStr(const std::string_view val) {
-    MAKE_C_STRING(val, string);
-
-    auto pystr = Py_BuildValue("s", string);
-
-    FREE_C_STRING(string);
+    auto pystr = Py_BuildValue("s#", &*val.begin(), (Py_ssize_t)val.size());
 
     return pystr;
 }

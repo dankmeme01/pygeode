@@ -1,3 +1,5 @@
+# Bindings for GD classes.
+
 Addr = int
 
 def CCObject_retain(self: Addr): ...

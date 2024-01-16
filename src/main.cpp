@@ -2,6 +2,7 @@
 #include <Geode/modify/MenuLayer.hpp>
 
 #include <pyruntime/pyruntime.hpp>
+#include <pyruntime/modules/internal.hpp>
 #include <pyruntime/modules/geode.hpp>
 #include <pyruntime/modules/gd.hpp>
 
@@ -40,6 +41,10 @@ $execute {
 
     if (PyImport_AppendInittab("_gd", PyInit__gd) == -1) {
         throw std::runtime_error("failed to append inittab for module '_gd'");
+    }
+
+    if (PyImport_AppendInittab("_internal", PyInit__internal) == -1) {
+        throw std::runtime_error("failed to append inittab for module '_internal'");
     }
 
     // initialize the runtime.

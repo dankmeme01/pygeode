@@ -1,5 +1,6 @@
 from __future__ import annotations
 import _geode
+import _internal
 from tuliphook import *
 from basic import *
 
@@ -8,6 +9,7 @@ from functools import wraps
 
 base: Addr = _geode.get_base()
 cocos_base: Addr = _geode.get_cocos_base()
+nullptr: Addr = 0
 
 class NotificationIcon:
     None_ = 0
@@ -79,19 +81,17 @@ def modify(class_):
     class_._modify_class_name = type(class_).__name__
     return class_
 
-def modify_func():
-    def decorator(func):
-        func_name = func.__qualname__.replace('.', '::')
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
+def modify_func(func):
+    func_name = func.__qualname__.replace('.', '::')
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
 
-        Mod.get().add_hook(func_name, wrapper)
-        wrapper._modify_func_name = func_name
-        return wrapper
-    return decorator
+    Mod.get().add_hook(func_name, wrapper)
+    wrapper._modify_func_name = func_name
+    return wrapper
 
 # original call
 def call_original(func, *args):
     name = func._modify_func_name
-    return _geode.call_original(name, *args)
+    return _internal.call_original(name, *args)

@@ -1,8 +1,8 @@
-from typing import Callable, Any
+# Bindings for geode.
+
+from typing import Callable
 
 Addr = int
-
-def call_original(name: str, *args) -> Any: ...
 
 def get_base() -> Addr: ...
 def get_cocos_base() -> Addr: ...

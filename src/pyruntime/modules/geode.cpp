@@ -32,10 +32,6 @@ PyMODINIT_FUNC PyInit__geode() {
 using namespace geode::prelude;
 
 namespace module::_geode {
-    PyObject* call_original(PyObject* self, PyObject* args) {
-        return hookdetours::callOriginal(args);
-    }
-
     PyObject* get_base(PyObject* self, PyObject* args) {
         return PyRuntime::get().makeInt<uintptr_t>(geode::base::get());
     }
@@ -128,5 +124,5 @@ namespace module::_geode {
         return rt.makeInt<uintptr_t>((uintptr_t)notif);
     }
 
-    MAKE_CALLER(Notification, show);
+    MAKE_CALLER_NSV(Notification, show);
 }
